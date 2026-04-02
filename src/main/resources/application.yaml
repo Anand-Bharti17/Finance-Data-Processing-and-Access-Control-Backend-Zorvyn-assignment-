@@ -1,3 +1,20 @@
 spring:
   application:
     name: finance-data-processing-and-access-control
+  # H2 Database Configuration
+  datasource:
+    url: jdbc:h2:mem:financedb
+    driverClassName: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    # Hibernate Configuration
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  # Enable H2 Console at /h2-console
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
