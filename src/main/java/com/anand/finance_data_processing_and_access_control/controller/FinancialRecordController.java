@@ -7,6 +7,7 @@ import com.anand.finance_data_processing_and_access_control.security.CustomUserD
 import com.anand.finance_data_processing_and_access_control.service.FinancialRecordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ public class FinancialRecordController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<FinancialRecordResponse> createRecord(
+            @Parameter(hidden = true)
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @Valid @RequestBody FinancialRecordRequest request) {
 
@@ -38,6 +40,7 @@ public class FinancialRecordController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
     @GetMapping
     public ResponseEntity<Page<FinancialRecordResponse>> getRecords(
+            @Parameter(hidden = true)
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
@@ -53,6 +56,7 @@ public class FinancialRecordController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST', 'VIEWER')")
     @GetMapping("/summary")
     public ResponseEntity<DashboardSummaryResponse> getDashboardSummary(
+            @Parameter(hidden = true)
             @AuthenticationPrincipal CustomUserDetails currentUser) {
 
         DashboardSummaryResponse summary = recordService.getDashboardSummary(currentUser.getId());
@@ -63,6 +67,7 @@ public class FinancialRecordController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRecord(
+            @Parameter(hidden = true)
             @AuthenticationPrincipal CustomUserDetails currentUser,
             @PathVariable Long id) {
 
