@@ -10,6 +10,8 @@ import com.anand.finance_data_processing_and_access_control.model.enums.Transact
 import com.anand.finance_data_processing_and_access_control.repository.FinancialRecordRepository;
 import com.anand.finance_data_processing_and_access_control.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,39 +44,43 @@ public class FinancialRecordService {
         return mapToResponse(savedRecord);
     }
 
-    public List<FinancialRecordResponse> getAllRecordsForUser(Long userId) {
-        return recordRepository.findByUserId(userId)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+    // Updated for Pagination and Search
+    public Page<FinancialRecordResponse> getRecords(Long userId, String keyword, Pageable pageable) {
+        Page<FinancialRecord> records;
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            records = recordRepository.searchRecords(userId, keyword, pageable);
+        } else {
+            records = recordRepository.findByUserId(userId, pageable);
+        }
+
+        return records.map(this::mapToResponse);
+    }
+
+    // New Delete Logic
+    @Transactional
+    public void deleteRecord(Long userId, Long recordId) {
+        FinancialRecord record = recordRepository.findByIdAndUserId(recordId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Record not found or you do not have permission to delete it."));
+
+        recordRepository.delete(record); // Triggers soft delete
     }
 
     public DashboardSummaryResponse getDashboardSummary(Long userId) {
-        // Fetch raw sums from database
         BigDecimal totalIncome = recordRepository.sumAmountByUserIdAndType(userId, TransactionType.INCOME);
         BigDecimal totalExpense = recordRepository.sumAmountByUserIdAndType(userId, TransactionType.EXPENSE);
 
-        // Handle nulls (if the user has no records yet)
         totalIncome = totalIncome != null ? totalIncome : BigDecimal.ZERO;
         totalExpense = totalExpense != null ? totalExpense : BigDecimal.ZERO;
-
-        // Calculate Net Balance
         BigDecimal netBalance = totalIncome.subtract(totalExpense);
 
-        // Fetch category groupings
         List<Object[]> categoryData = recordRepository.sumAmountByUserIdAndTypeGroupByCategory(userId, TransactionType.EXPENSE);
-
-        // Convert List<Object[]> to Map<String, BigDecimal>
         Map<String, BigDecimal> categoryTotals = categoryData.stream()
-                .collect(Collectors.toMap(
-                        obj -> (String) obj[0],
-                        obj -> (BigDecimal) obj[1]
-                ));
+                .collect(Collectors.toMap(obj -> (String) obj[0], obj -> (BigDecimal) obj[1]));
 
         return new DashboardSummaryResponse(totalIncome, totalExpense, netBalance, categoryTotals);
     }
 
-    // Helper method to map Entity to DTO
     private FinancialRecordResponse mapToResponse(FinancialRecord record) {
         return new FinancialRecordResponse(
                 record.getId(),

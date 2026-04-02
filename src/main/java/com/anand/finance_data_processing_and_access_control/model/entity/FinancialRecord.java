@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -17,6 +19,8 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE financial_records SET is_deleted = true WHERE id=?")
+@SQLRestriction("is_deleted = false")
 public class FinancialRecord {
 
     @Id
@@ -24,7 +28,7 @@ public class FinancialRecord {
     private Long id;
 
     @Column(nullable = false)
-    private BigDecimal amount; // Using BigDecimal for accurate financial calculations
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -41,7 +45,10 @@ public class FinancialRecord {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // Links the record to the specific user who owns it
+    private User user;
+
+    @Column(nullable = false)
+    private boolean isDeleted = false; // New field for soft delete
 
     @CreationTimestamp
     @Column(updatable = false)
